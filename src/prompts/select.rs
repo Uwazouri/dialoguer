@@ -169,6 +169,12 @@ impl<'a> Select<'a> {
         self
     }
 
+    /// Forked imp. Sets the optional input reciever to listen on.
+    pub fn with_input(&mut self, input: Receiver<Key>) -> &mut Select<'a> {
+        self.input = Some(input);
+        self
+    }
+
     /// Enables user interaction and returns the result.
     ///
     /// Similar to [interact_on](#method.interact_on) except for the fact that it does not allow selection of the terminal.

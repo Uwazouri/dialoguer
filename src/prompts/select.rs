@@ -1,3 +1,4 @@
+use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Receiver;
 use std::{io, ops::Rem};
 
@@ -41,7 +42,7 @@ pub struct Select<'a> {
     prompt: Option<String>,
     clear: bool,
     theme: &'a dyn Theme,
-    input: Option<Receiver<Key>>,
+    input: Option<Arc<Mutex<Receiver<Key>>>>,
 }
 
 impl<'a> Default for Select<'a> {
@@ -170,7 +171,7 @@ impl<'a> Select<'a> {
     }
 
     /// Forked imp. Sets the optional input reciever to listen on.
-    pub fn with_input(&mut self, input: Receiver<Key>) -> &mut Select<'a> {
+    pub fn with_input(&mut self, input: Arc<Mutex<Receiver<Key>>>) -> &mut Select<'a> {
         self.input = Some(input);
         self
     }
@@ -289,7 +290,9 @@ impl<'a> Select<'a> {
             // Forked imp
             let mut key: Key;
             if self.input.is_some() {
-                let read_result = self.input.as_ref().unwrap().recv();
+                let input_lock = self.input.as_ref().unwrap().lock().unwrap();
+                let read_result = input_lock.recv();
+                drop(input_lock);
                 if read_result.is_ok() {
                     key = read_result.unwrap();
                 } else {

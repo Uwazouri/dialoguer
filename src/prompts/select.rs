@@ -1,3 +1,4 @@
+use std::sync::mpsc::Receiver;
 use std::{io, ops::Rem};
 
 use crate::paging::Paging;
@@ -40,6 +41,7 @@ pub struct Select<'a> {
     prompt: Option<String>,
     clear: bool,
     theme: &'a dyn Theme,
+    input: Option<Receiver<Key>>,
 }
 
 impl<'a> Default for Select<'a> {
@@ -79,6 +81,7 @@ impl<'a> Select<'a> {
             prompt: None,
             clear: true,
             theme,
+            input: None
         }
     }
 
@@ -276,8 +279,21 @@ impl<'a> Select<'a> {
             }
 
             term.flush()?;
+            
+            // Forked imp
+            let mut key: Key;
+            if self.input.is_some() {
+                let read_result = self.input.as_ref().unwrap().recv();
+                if read_result.is_ok() {
+                    key = read_result.unwrap();
+                } else {
+                    key = term.read_key()?;
+                }
+            } else {
+                key = term.read_key()?;
+            }
 
-            match term.read_key()? {
+            match key {
                 Key::ArrowDown | Key::Char('j') => {
                     if sel == !0 {
                         sel = 0;
